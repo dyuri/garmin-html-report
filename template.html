@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garmin Activity Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Default Light Theme */
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+
+            --badge-running-bg: #dcfce7;
+            --badge-running-text: #15803d;
+            --badge-cycling-bg: #e0f2fe;
+            --badge-cycling-text: #0369a1;
+            --badge-default-bg: #f1f5f9;
+            --badge-default-text: #64748b;
+
+            --chart-border: #ffffff;
+            --title-color: #1e293b;
+            --th-bg: #f1f5f9;
+            --row-hover: #f8fafc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Gruvbox Dark Theme */
+                --bg-body: #282828;
+                /* gruvbox dark0_hard */
+                --bg-card: #3c3836;
+                /* gruvbox dark1 */
+                --text-dark: #ebdbb2;
+                /* gruvbox light1 */
+                --text-light: #a89984;
+                /* gruvbox gray */
+                --border: #504945;
+                /* gruvbox dark2 */
+
+                --primary: #83a598;
+                /* gruvbox blue */
+                --secondary: #458588;
+                /* gruvbox blue dark */
+                --success: #b8bb26;
+                /* gruvbox green */
+                --warning: #fabd2f;
+                /* gruvbox yellow */
+                --danger: #fb4934;
+                /* gruvbox red */
+
+                --badge-running-bg: #98971a;
+                --badge-running-text: #282828;
+                --badge-cycling-bg: #458588;
+                --badge-cycling-text: #ebdbb2;
+                --badge-default-bg: #a89984;
+                --badge-default-text: #282828;
+
+                --chart-border: #282828;
+                --title-color: #d79921;
+                --th-bg: #32302f;
+                --row-hover: #504945;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--title-color);
+            margin: 0;
+        }
+
+        .gen-date {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        .card-title {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .card-sub {
+            font-size: 0.875rem;
+            color: var(--success);
+            margin-top: 0.25rem;
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            height: 300px;
+            position: relative;
+        }
+
+        /* Table Section */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead {
+            background-color: var(--th-bg);
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-light);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: var(--row-hover);
+            transition: background-color 0.2s;
+        }
+
+        tr:hover td {
+            color: var(--text-dark);
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .type-running {
+            background-color: var(--badge-running-bg);
+            color: var(--badge-running-text);
+        }
+
+        .type-cycling {
+            background-color: var(--badge-cycling-bg);
+            color: var(--badge-cycling-text);
+        }
+
+        .type-swimming {
+            background-color: var(--badge-default-bg);
+            color: var(--badge-default-text);
+        }
+
+        .no-data {
+            color: #665c54;
+            /* dark3 */
+        }
+
+        details.table-section {
+            margin-bottom: 2rem;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            user-select: none;
+            outline: none;
+            font-size: 1.125rem;
+        }
+
+        summary:hover {
+            color: var(--primary);
+        }
+
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .leaderboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .leaderboard-table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Activity Dashboard</h1>
+                <p>Garmin Statistics 2025</p>
+            </div>
+            <div class="gen-date">Generated: {{ generation_date }}</div>
+        </header>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-title">Total Distance</div>
+                <div class="card-value">{{ "%.2f"|format(stats.total_distance) }} km</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Total Activities</div>
+                <div class="card-value">{{ stats.total_activities }}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Total Calories</div>
+                <div class="card-value">{{ "{:,}".format(stats.total_calories) }} kcal</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Total Time</div>
+                <div class="card-value">{{ stats.total_duration }}</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-container">
+                <canvas id="typeChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="distChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Chart -->
+        <div class="chart-container" style="margin-bottom: 2rem; height: 350px;">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+
+        <!-- Cumulative Chart -->
+        <div class="chart-container" style="margin-bottom: 2rem; height: 350px;">
+            <canvas id="cumulativeChart"></canvas>
+        </div>
+
+        <!-- Scatter Chart -->
+        <div class="chart-container" style="margin-bottom: 2rem; height: 400px;">
+            <canvas id="scatterChart"></canvas>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <!-- HR Zone Chart -->
+            <div class="chart-container" style="height: 350px; margin-bottom: 0;">
+                <canvas id="hrZoneChart"></canvas>
+            </div>
+            <!-- Cadence Chart -->
+            <div class="chart-container" style="height: 350px; margin-bottom: 0;">
+                <canvas id="cadenceChart"></canvas>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">Records & Achievements</h2>
+        <div class="leaderboard-grid">
+            <!-- Top Distance -->
+            <div class="table-container">
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); font-weight: 600;">Longest Activities
+                </div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title</th>
+                            <th>Dist (km)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for act in stats.top_distance %}
+                        <tr>
+                            <td>{{ act.date_display }}</td>
+                            <td>{{ act.title }}</td>
+                            <td style="font-weight: 600; color: var(--text-dark);">{{ "%.2f"|format(act.distance) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Top Ascent -->
+            <div class="table-container">
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); font-weight: 600;">Highest Elev. Gain
+                </div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title</th>
+                            <th>Ascent (m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for act in stats.top_climb %}
+                        <tr>
+                            <td>{{ act.date_display }}</td>
+                            <td>{{ act.title }}</td>
+                            <td style="font-weight: 600; color: var(--text-dark);">{{ act.ascent }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <details class="table-section">
+            <summary>Detailed Activity List</summary>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Distance (km)</th>
+                            <th>Time</th>
+                            <th>Avg HR</th>
+                            <th>Calories</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in activities %}
+                        <tr>
+                            <td>{{ activity.date_display }}</td>
+                            <td>
+                                <span
+                                    class="type-badge {% if 'Running' in activity.type %}type-running{% elif 'Cycling' in activity.type %}type-cycling{% endif %}">
+                                    {{ activity.type }}
+                                </span>
+                            </td>
+                            <td>{{ activity.title }}</td>
+                            <td>{{ "%.2f"|format(activity.distance) }}</td>
+                            <td>{{ activity.time_str }}</td>
+                            <td>{{ activity.avg_hr or '<span class="no-data">-</span>' }}</td>
+                            <td>{{ "{:,}".format(activity.calories) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+
+    <script>
+        // Prepare data from Jinja
+        const types = {{ stats.activity_types.keys() | list | tojson }};
+        const counts = {{ stats.activity_types.values() | map(attribute = 'count') | list | tojson }};
+        const distances = {{ stats.activity_types.values() | map(attribute = 'distance') | list | tojson }};
+
+        // Palettes
+        const palettes = {
+            light: {
+                pie: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'],
+                bar: '#3b82f6',
+                border: '#ffffff',
+                text: '#1e293b',
+                grid: '#e2e8f0'
+            },
+            dark: {
+                pie: ['#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a', '#d65d0e'],
+                bar: '#83a598',
+                border: '#282828',
+                text: '#ebdbb2',
+                grid: '#504945'
+            }
+        };
+
+        function getTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        let typeChart, distChart;
+
+        function initCharts() {
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            Chart.defaults.color = colors.text;
+            Chart.defaults.borderColor = colors.grid;
+
+            // Activity Types Pie Chart
+            if (typeChart) typeChart.destroy();
+            const ctxType = document.getElementById('typeChart').getContext('2d');
+            typeChart = new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: types,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: colors.pie,
+                        borderColor: colors.border,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Activities by Type', color: colors.text },
+                        legend: { position: 'right', labels: { color: colors.text } }
+                    }
+                }
+            });
+
+            // Distance Bar Chart
+            if (distChart) distChart.destroy();
+            const ctxDist = document.getElementById('distChart').getContext('2d');
+            distChart = new Chart(ctxDist, {
+                type: 'bar',
+                data: {
+                    labels: types,
+                    datasets: [{
+                        label: 'Total Distance (km)',
+                        data: distances,
+                        backgroundColor: colors.bar,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Distance by Type', color: colors.text },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            ticks: { color: colors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on load
+        initCharts();
+
+        // Prepare Monthly Data
+        const rawMonthly = {{ stats.monthly | tojson }};
+        // Sort by date (keys are YYYY-MM)
+        const sortedMonths = Object.keys(rawMonthly).sort();
+        const monthlyDistances = sortedMonths.map(m => rawMonthly[m]);
+
+        function initMonthlyChart() {
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [{
+                        label: 'Distance (km)',
+                        data: monthlyDistances,
+                        backgroundColor: colors.bar,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Monthly Distance', color: colors.text, font: { size: 16 } },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Distance (km)', color: colors.text },
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            ticks: { color: colors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Add to init list or run separate (simpler to just run it, but need to handle theme updates)
+        // Let's hook it into initCharts/theme listener properly
+        // Refactoring initCharts to be more extensible or just adding this one to it would be cleaner, 
+        // but for now let's just make sure it re-renders on theme change.
+
+        // Actually, let's redefine initCharts to include this one, or create a global list of chart destroyers.
+        // For simplicity in this append-style edit, I'll add a separate listener wrapper.
+
+        let monthlyChartInstance;
+        function renderMonthly() {
+            if (monthlyChartInstance) monthlyChartInstance.destroy();
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChartInstance = new Chart(ctxMonthly, {
+                type: 'bar',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [{
+                        label: 'Distance (km)',
+                        data: monthlyDistances,
+                        backgroundColor: colors.primary || colors.bar, // Use bar color
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Monthly Distance', color: colors.text, font: { size: 16 } },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            ticks: { color: colors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        renderMonthly();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderMonthly);
+
+        // Prepare Cumulative Data
+        const rawCumulative = {{ stats.cumulative | tojson }};
+        const cumLabels = rawCumulative.map(x => x.date);
+        const cumValues = rawCumulative.map(x => x.total);
+
+        let cumChartInstance;
+        function renderCumulative() {
+            if (cumChartInstance) cumChartInstance.destroy();
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            const ctxCum = document.getElementById('cumulativeChart').getContext('2d');
+            cumChartInstance = new Chart(ctxCum, {
+                type: 'line',
+                data: {
+                    labels: cumLabels,
+                    datasets: [{
+                        label: 'Total Distance (km)',
+                        data: cumValues,
+                        borderColor: colors.primary || colors.bar,
+                        backgroundColor: (colors.primary || colors.bar) + '20', // transparent fill
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: 0, // hide points for cleaner look
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: { display: true, text: 'Cumulative Distance (YTD)', color: colors.text, font: { size: 16 } },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.parsed.y.toFixed(2) + ' km';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Total Distance (km)', color: colors.text },
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            ticks: {
+                                color: colors.text,
+                                maxTicksLimit: 12 // Limit labels to avoid clutter
+                            },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        renderCumulative();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderCumulative);
+
+        // Prepare Scatter Data
+        const rawScatter = {{ stats.scatter_data | tojson }};
+
+        let scatterChartInstance;
+        function renderScatter() {
+            if (scatterChartInstance) scatterChartInstance.destroy();
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            // Generate color based on activity type for points
+            const pointColors = rawScatter.map(d => {
+                if (d.type.includes('Track')) return '#ef4444';
+                if (d.type.includes('Trail')) return '#10b981';
+                return colors.primary || '#3b82f6';
+            });
+
+            const ctxScatter = document.getElementById('scatterChart').getContext('2d');
+            scatterChartInstance = new Chart(ctxScatter, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Run',
+                        data: rawScatter,
+                        backgroundColor: pointColors,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Pace vs. Heart Rate', color: colors.text, font: { size: 16 } },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const p = context.raw;
+                                    // Convert decimal pace back to MM:SS
+                                    const mins = Math.floor(p.x);
+                                    const secs = Math.round((p.x - mins) * 60);
+                                    const paceStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                                    return `${p.date} - ${p.title} (Pace: ${paceStr}, HR: ${p.y})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Avg HR (bpm)', color: colors.text },
+                            ticks: { color: colors.text },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            title: { display: true, text: 'Avg Pace (min/km)', color: colors.text },
+                            ticks: {
+                                color: colors.text,
+                                callback: function (value) {
+                                    const mins = Math.floor(value);
+                                    const secs = Math.round((value - mins) * 60);
+                                    return mins + ':' + (secs < 10 ? '0' : '') + secs;
+                                }
+                            },
+                            grid: { color: colors.grid },
+                            // Reverse x axis so faster (lower) pace is on the right? 
+                            // Or standard left-to-right? Standard is fine: Faster is Left (lower numbers).
+                            // Let's keep numeric standard.
+                        }
+                    }
+                }
+            });
+        }
+
+        renderScatter();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderScatter);
+
+        // Prepare Cadence Data
+        const rawCadence = {{ stats.cadence_dist | tojson }};
+        const cadenceLabels = ["< 150", "150-160", "160-170", "170-180", "180+"];
+        const cadenceValues = cadenceLabels.map(l => rawCadence[l]);
+
+        let cadenceChartInstance;
+        function renderCadence() {
+            if (cadenceChartInstance) cadenceChartInstance.destroy();
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            const ctxCadence = document.getElementById('cadenceChart').getContext('2d');
+            cadenceChartInstance = new Chart(ctxCadence, {
+                type: 'bar',
+                data: {
+                    labels: cadenceLabels,
+                    datasets: [{
+                        label: 'Number of Runs',
+                        data: cadenceValues,
+                        backgroundColor: colors.primary || colors.bar,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Run Cadence Distribution', color: colors.text, font: { size: 16 } },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Count', color: colors.text },
+                            ticks: { color: colors.text, stepSize: 1 },
+                            grid: { color: colors.grid }
+                        },
+                        x: {
+                            title: { display: true, text: 'Steps Per Minute (SPM)', color: colors.text },
+                            ticks: { color: colors.text },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        renderCadence();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderCadence);
+
+        // Prepare HR Zone Data
+        const rawHR = {{ stats.hr_zones | tojson }};
+        const hrLabels = Object.keys(rawHR);
+        const hrValues = Object.values(rawHR);
+
+        let hrChartInstance;
+        function renderHR() {
+            if (hrChartInstance) hrChartInstance.destroy();
+            const theme = getTheme();
+            const colors = palettes[theme];
+
+            // Fixed colors for Zones (Green -> Red)
+            const zoneColors = [
+                '#9ca3af', // Z1 - Gray/Light
+                '#3b82f6', // Z2 - Blue
+                '#10b981', // Z3 - Green
+                '#f59e0b', // Z4 - Orange
+                '#ef4444'  // Z5 - Red
+            ];
+
+            const ctxHR = document.getElementById('hrZoneChart').getContext('2d');
+            hrChartInstance = new Chart(ctxHR, {
+                type: 'doughnut',
+                data: {
+                    labels: hrLabels,
+                    datasets: [{
+                        label: 'Activities',
+                        data: hrValues,
+                        backgroundColor: zoneColors,
+                        borderWidth: 1,
+                        borderColor: theme === 'dark' ? '#1e293b' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Runs by HR Zone (Avg HR)', color: colors.text, font: { size: 16 } },
+                        legend: { position: 'right', labels: { color: colors.text } }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        renderHR();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderHR);
+
+        // Listen for theme changes (existing)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', initCharts);
+    </script>
+</body>
+
+</html>
