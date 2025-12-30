@@ -89,11 +89,25 @@
             padding: 2rem;
         }
 
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+
         header {
             margin-bottom: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
         }
 
         h1 {
@@ -173,6 +187,8 @@
             border: 1px solid var(--border);
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            overflow-x: auto;
+            /* Allow horizontal scroll */
         }
 
         table {
@@ -191,12 +207,15 @@
             font-weight: 600;
             color: var(--text-dark);
             border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
 
         td {
             padding: 1rem;
             border-bottom: 1px solid var(--border);
             color: var(--text-light);
+            white-space: nowrap;
+            /* Force scroll on small screens */
         }
 
         tr:last-child td {
@@ -276,6 +295,21 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+
+        /* Utility for 2-column charts that need to stack */
+        .chart-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .chart-row-2 {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
     </style>
 </head>
 
@@ -332,13 +366,13 @@
             <canvas id="scatterChart"></canvas>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div class="chart-row-2">
             <!-- HR Zone Chart -->
-            <div class="chart-container" style="height: 350px; margin-bottom: 0;">
+            <div class="chart-container" style="height: 350px;">
                 <canvas id="hrZoneChart"></canvas>
             </div>
             <!-- Cadence Chart -->
-            <div class="chart-container" style="height: 350px; margin-bottom: 0;">
+            <div class="chart-container" style="height: 350px;">
                 <canvas id="cadenceChart"></canvas>
             </div>
         </div>
